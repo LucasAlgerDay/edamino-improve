@@ -1440,3 +1440,31 @@ class Client:
         if url is not None:
             return await self.request(
                 'POST', url, data)
+        
+    async def edit_community(self, name: str = None, description: str = None, aminoId: str = None, primaryLanguage: str = None, themePackUrl: str = None, probationStatus: int = None, promotionalMediaList: list[str] = None, icon: str = None) -> Dict:
+        data = {"timestamp": int(time() * 1000)}
+        if name is not None: data["name"] = name
+        if description is not None: data["content"] = description
+        if aminoId is not None: data["endpoint"] = aminoId
+        if primaryLanguage is not None: data["primaryLanguage"] = primaryLanguage
+        if themePackUrl is not None: data["themePackUrl"] = themePackUrl
+        if probationStatus is not None: data["joinType"] = probationStatus
+        if promotionalMediaList is not None: 
+            media_list = []
+            for image in promotionalMediaList:
+                media_list.append([100, image, None])
+            data['promotionalMediaList'] = media_list
+        if icon:
+            data['icon'] = {
+                "height": 512.0,
+                "imageMatrix": [1.6875, 0.0, 108.0, 0.0, 1.6875, 497.0, 0.0, 0.0, 1.0],
+                "path": icon,
+                "width": 512.0,
+                "x": 0.0,
+                "y": 0.0
+            }
+        print(data)
+        return await self.request(
+            'POST',
+            f'community/settings', data
+        )
