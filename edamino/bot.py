@@ -298,7 +298,6 @@ class Bot:
 
     async def ws_reload(self):
         self.ws     = await self.client.ws_connect()
-        print("WS reload")
         timestamp   = int(time())
 
         while True and (time() - timestamp) < 180:
@@ -306,7 +305,7 @@ class Bot:
                 data = await self.ws.receive_json(loads=loads)
                 await self.__call__handlers(data)
             except Exception as e:
-                log.error(e)
+                continue
 
     async def __call(self) -> None:
         self.loop.create_task(self.ws_reload())
