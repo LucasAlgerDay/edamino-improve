@@ -297,19 +297,18 @@ class Bot:
 
 
     async def ws_reload(self):
-        ws          = await self.client.ws_connect()
+        self.ws     = await self.client.ws_connect()
         print("WS reload")
         timestamp   = int(time())
 
         while True and (time() - timestamp) < 180:
             try:
-                data = await ws.receive_json(loads=loads)
+                data = await self.ws.receive_json(loads=loads)
                 await self.__call__handlers(data)
             except Exception as e:
                 log.error(e)
 
     async def __call(self) -> None:
-        #self.ws = await self.client.ws_connect()
         self.loop.create_task(self.ws_reload())
 
         if ON_READY:
@@ -331,7 +330,6 @@ class Bot:
             try:
                 if int(time()) - timestamp >= pollingTime:
                     self.loop.create_task(self.ws_reload())
-                    #self.ws   = await self.client.ws_connect()
                     timestamp = int(time())
 
                     if ON_READY:
