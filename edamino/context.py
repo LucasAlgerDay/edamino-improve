@@ -9,7 +9,7 @@ from typing import (
 from contextlib import asynccontextmanager, contextmanager
 from ujson import dumps
 from aiohttp import ClientWebSocketResponse
-
+import time
 
 class Context:
     __slots__ = ('msg', 'client', 'ws')
@@ -385,3 +385,23 @@ class Context:
     
     async def like_wiki(self, wiki_id: str):
         return await self.client.like_wiki(wiki_id)
+
+    async def show_online(self, ndcId=None):
+        if ndcId is None: ndcId = self.client.uid
+
+        data = {
+            'o' : {
+                "actions" : ["Browsing"],
+                "target"  : f"ndc://x{ndcId}/",
+                "ndcId"   : ndcId,
+                "id"      : "82333",
+                "timestamp" : int(time.time() * 1000)
+            },
+            't' : 304
+        }
+
+        data['t'] = 306
+        await self.ws.send_json(data)
+        data['t'] = 304
+        await self.ws.send_json(data)
+        return

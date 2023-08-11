@@ -1,4 +1,4 @@
-from asyncio import TimeoutError
+from asyncio import TimeoutError, sleep
 from pathlib import Path
 from re import search
 from time import time
@@ -17,6 +17,8 @@ from collections import namedtuple
 from typing import Optional, List, Union, Tuple, Dict, Callable, Awaitable
 from functools import partial
 from contextlib import suppress
+import aiohttp
+import traceback
 
 __all__ = ['Bot']
 
@@ -32,7 +34,8 @@ CALLBACKS: List[Callable[[Client], Awaitable[None]]] = []
 
 ON_READY: Optional[Callable] = None
 ON_MENTION: Optional[Callable[[Context], Awaitable[None]]] = None
-
+ON_START = None
+ON_RELOAD = None
 
 class TheCommandAlreadyExists(Exception):
     pass
@@ -45,6 +48,10 @@ class IsNotCoroutineFunction(Exception):
 class ArgumentsNotFound(Exception):
     pass
 
+class FakeMessage:
+    def __new__(self):
+        self.ndcId = 0
+        return self
 
 def get_annotations(handler: Handler, words: List[str], command: str,
                     message: str) -> List:
@@ -130,6 +137,24 @@ class Bot:
 
         with open('.env', 'w') as file:
             file.write(string)
+
+    @staticmethod
+    def ready(message=None):
+        def register_function(callback):
+            global ON_START
+            ON_START = callback
+            if message: log.info(message)
+            return callback
+        return register_function
+
+    @staticmethod
+    def reload(miessage=None):
+        def register_function(callback):
+            global ON_RELOAD
+            ON_RELOAD = callback
+            if message: log.info(message)
+            return callback
+        return register_function
 
     @staticmethod
     def event(message_types: Optional[Union[List[int], Tuple[int,
@@ -270,15 +295,27 @@ class Bot:
                                 log.error(e)
                         break
 
+
+    async def ws_reload(self):
+        ws          = await self.client.ws_connect()
+        print("WS reload")
+        timestamp   = int(time())
+
+        while True and (time() - timestamp) < 180:
+            try:
+                data = await ws.receive_json(loads=loads)
+                await self.__call__handlers(data)
+            except Exception as e:
+                log.error(e)
+
     async def __call(self) -> None:
-        timestamp: int = int(time())
-        self.ws = await self.client.ws_connect()
+        #self.ws = await self.client.ws_connect()
+        self.loop.create_task(self.ws_reload())
 
         if ON_READY:
             await ON_READY()
 
         if CALLBACKS:
-
             async def run_while_task(cal) -> None:
                 while True:
                     await cal(self.client)
@@ -286,23 +323,28 @@ class Bot:
             for callback in CALLBACKS:
                 self.loop.create_task(run_while_task(callback))
 
+        timestamp: int  = int(time())
+        pollingTime     = 180
+        reloadTime      = 60 * 60 * 12
+
         while True:
             try:
-                if int(time()) - timestamp >= 180:
-                    self.ws = await self.client.ws_connect()
+                if int(time()) - timestamp >= pollingTime:
+                    self.loop.create_task(self.ws_reload())
+                    #self.ws   = await self.client.ws_connect()
                     timestamp = int(time())
+
                     if ON_READY:
                         await ON_READY()
 
-                    if time() - self.timestamp > 60 * 60 * 12:
+                    if time() - self.timestamp > reloadTime:
                         login = await self.client.login(
                             self.email, self.password, self.deviceId)
                         self.sid = login.sid
                         self.uid = login.auid
                         self.update_cfg()
 
-                data = await self.ws.receive_json(loads=loads)
-                await self.__call__handlers(data)
+                await sleep(1)
 
             except (TypeError, KeyError, AttributeError,
                     WebSocketConnectError):
@@ -354,6 +396,13 @@ class Bot:
 
             if ON_READY:
                 ON_READY = partial(ON_READY, profile)
+
+            if ON_START:
+                try:
+                    start_context = self.get_context(self.client, FakeMessage(), None)
+                    self.loop.create_task(ON_START(start_context))
+                except Exception as e:
+                    pass
 
             self.loop.run_until_complete(self.__call())
         except KeyboardInterrupt:

@@ -484,7 +484,9 @@ class Client:
                 return await self.session.ws_connect(
                     f"wss://ws{i}.aminoapps.com/?signbody={self.device_id}%7C{timestamp}",
                     headers=headers,
-                    proxy=self.proxy)
+                    proxy=self.proxy,
+                    timeout=aiohttp.ClientTimeout(total=5)
+                    )
             except WSServerHandshakeError:
                 continue
 
@@ -1078,7 +1080,7 @@ class Client:
                         fansOnly: bool = False,
                         extensions: Optional[Dict] = None,
                         code: Optional[List[str]] = None,
-                        index_image: Optional[list[int]] = None,
+                        index_image: Optional[List[int]] = None,
                         datas: any = None) -> objects.Blog:
         media_list: Optional[List] = None
 
@@ -1441,7 +1443,7 @@ class Client:
             return await self.request(
                 'POST', url, data)
         
-    async def edit_community(self, name: str = None, description: str = None, aminoId: str = None, primaryLanguage: str = None, themePackUrl: str = None, probationStatus: int = None, promotionalMediaList: list[str] = None, icon: str = None) -> Dict:
+    async def edit_community(self, name: str = None, description: str = None, aminoId: str = None, primaryLanguage: str = None, themePackUrl: str = None, probationStatus: int = None, promotionalMediaList: List[str] = None, icon: str = None) -> Dict:
         data = {"timestamp": int(time() * 1000)}
         if name is not None: data["name"] = name
         if description is not None: data["content"] = description
@@ -1468,3 +1470,73 @@ class Client:
             'POST',
             f'community/settings', data
         )
+
+    async def get_community_user_stats(self, userType, start=0, size=25):
+        target = "curator"
+        if      userType.lower() == "leader":   target = "leader"
+        elif    userType.lower() == "curator":  target = "curator"
+        else:   return None
+
+        response = await self.request("GET", f"community/stats/moderation?type={target}&start={start}&size={size}")
+        return tuple(map(lambda user: objects.AdminUserProfile(**user), response['userProfileList']))
+
+    async def delete_comment(self, commentId, userId):
+        return await self.request("DELETE", f"user-profile/{userId}/comment/{commentId}")
+    
+    async def moderation_history(self, userId=None, blogId=None, itemId=None, quizId=None, fileId=None, threadId=None, pagingToken=None, size=25):
+        objectType  = None
+        objectId    = None
+
+        if userId:
+            objectType  = 0
+            objectId    = userId
+
+        elif blogId or quizId:
+            objectType  = 1
+            objectId    = blogId if blogId else quizId
+
+        elif wikiId:
+            objectType  = 2
+            objectId    = wikiId
+
+        elif threadId:
+            objectType  = 12
+            objectId    = threadId
+
+        elif fileId:
+            objectType  = 109
+            objectId    = fileId
+
+        if pagingToken is None: token = 't'
+        else:                   token = pagingToken
+
+        response = await self.request('GET', f'admin/operation?objectId={objectId}&objectType={objectType}&pagingType={token}&size={size}')
+        return tuple(map(lambda log: objects.AdminLogList(**log), response['adminLogList'])), response['pagingToken']
+
+    
+    async def get_leaderboard_info(self, rankingType=2):
+        response = await self.request("GET", f"https://service.narvii.com/api/v1/g/s-{self.ndc_id}/community/leaderboard?rankingType={rankingType}&start=0&size=100", full_url=True)
+        return tuple(map(lambda user: objects.LeaderboardUserProfile(**user), response['userProfileList']))
+
+    async def get_blog_likes(self, blogId=None, wikiId=None, start=0, size=100):
+        response = None
+        if   blogId:  response = await self.request('GET', f'blog/{blogId}/vote?cv=1.2&start={start}&size={size}')
+        elif wikiId:  response = await self.request('GET', f'item/{blogId}/vote?cv=1.2&start={start}&size={size}')
+        return objects.PostLikes(response)
+
+    async def get_my_communities(self, start=0, size=25):
+            data = {"timestamp": int(time.time() * 1000)}
+            response = await self.request(
+                'GET', f'https://service.aminoapps.com/api/v1/g/s/community/joined?v=1&start={start}&size={size}', json=data, full_url=True)
+            return tuple(
+                map(lambda community: objects.Community(**community),
+                    response['communityList']))
+
+    async def get_recent_blogs(self, pageToken=None, start=0, size=25):
+        data = {"timestamp": int(time.time() * 1000)}
+        resp = await self.request("GET", f"feed/blog-all?pagingType=t{('&pageToken='+pageToken) if pageToken else ''}&start={start}&size={size}", json=data)
+        return tuple(map(lambda recent: objects.Blog(**recent), resp["blogList"]))
+
+    async def get_featured_blogs(self, start=0, size=25):
+        resp = await self.request("GET", f"feed/featured?start={start}&size={size}")
+        return tuple(map(lambda blog: objects.Featured(**blog), resp["featuredList"]))
