@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Dict, Optional, Any, Tuple
 from pydantic import BaseModel, Field
-
+import datetime
 
 class UserProfileExtensions(BaseModel):
     privilegeOfCommentOnUserProfile: Optional[int]
@@ -798,6 +798,124 @@ class Wiki(BaseModel):
     ndcId: Optional[int]
     createdTime: Optional[str]
     commentsCount: Optional[int]
+
+class AdminUserProfile(UserProfile):
+    adminLogCountIn7Days:       Optional[int]
+    avgDailySpendTimeIn7Days:   Optional[int]
+
+class AdminLogList(BaseModel):
+    author:                     Author
+    createdTime:                Optional[Any]
+    objectType:                 Optional[int]
+    operationName:              Optional[str]
+    comId:                      Optional[int]
+    referTicketId:              Optional[str]
+    extData:                    Optional[Any]
+    operationDetail:            Optional[Any]
+    operationLevel:             Optional[Any]
+    moderationLevel:            Optional[str]
+    operation:                  Optional[Any]
+    objectId:                   Optional[str]
+    logId:                      Optional[str]
+    objectUrl:                  Optional[str]
+    content:                    Optional[str]
+    value:                      Optional[Any]
+
+class LeaderboardUserProfile(BaseModel):
+    status:                     Optional[int]
+    isNicknameVerified:         Any
+    activeTime:                 Optional[int]
+    uid:                        Optional[str]
+    level:                      Optional[int]
+    followingStatus:            Optional[int]
+    accountMembershipStatus:    Optional[int]
+    isGlobal:                   Any
+    membershipStatus:           Optional[int]
+    reputation:                 Optional[int]
+    role:                       Optional[int]
+    ndcId:                      Optional[int]
+    membersCount:               Optional[int]
+    nickname:                   Optional[str]
+    icon:                       Optional[str]
+
+class VotedValueMapV2(BaseModel):
+    createdTime:                Optional[Any]
+    uid:                        Optional[str]
+    value:                      Optional[int]
+
+class PostLikes:
+    votedValueMap:              Optional[Tuple[str]]
+    votedValueMapV2:            Optional[Tuple[VotedValueMapV2]]
+    UserProfile:                Optional[Tuple[UserProfile]]
+    votedCount:                 Optional[int]
+
+    def __init__(self, response):
+        self.votedValueMap      = tuple(response['votedValueMap'].keys())
+        self.votedValueMapV2    = tuple(map(lambda voteMap: VotedValueMapV2(**voteMap[1]), response['votedValueMapV2'].items())) 
+        self.UserProfile        = tuple(map(lambda userProfile: UserProfile(**userProfile), response['userProfileList'])) 
+        self.votedCount         = len(self.votedValueMap)
+
+class TipOption(BaseModel):
+    value:                      Optional[int]
+    icon:                       Optional[str]
+
+class TipInfo(BaseModel):
+    tipOptionList:              Optional[Tuple[TipOption, ...]]
+    tipMaxCoin:                 Optional[int]
+    tippersCount:               Optional[int]
+    tippable:                   Any
+    tipMinCoin:                 Optional[int]
+    tipCustomOption:            Optional[TipOption]
+    tippedCoins:                Optional[int]
+
+class RefObjectStyle(BaseModel):
+    coverMediaIndexList:        Optional[Tuple[int]]
+
+class RefObjectExtensions(BaseModel):
+    style:                      Optional[RefObjectStyle]
+    fansOnly:                   Any
+    featuredType:               Optional[int]
+
+class RefObject(BaseModel):
+    globalVotesCount:           Optional[int]
+    globalVotedValue:           Optional[int]
+    votedValue:                 Optional[int]
+    keywords:                   Optional[str]
+    strategyInfo:               Optional[str]
+    mediaList:                  Any
+    style:                      Optional[int]
+    totalQuizPlayCount:         Optional[int]
+    title:                      Optional[str]
+    tipInfo:                    Optional[TipInfo]
+    contentRating:              Optional[int]
+    content:                    Optional[str]
+    needHidden:                 Any
+    guestVotesCount:            Optional[int]
+    type:                       Optional[int]
+    status:                     Optional[int]
+    globalCommentsCount:        Optional[int]
+    modifiedTime:               Any
+    widgetDisplayInterval:      Any
+    totalPollVoteCount:         Optional[int]
+    blogId:                     Optional[str]
+    viewCount:                  Optional[int]
+    author:                     Optional[Author]
+    extensions:                 Optional[RefObjectExtensions]
+    votesCount:                 Optional[int]
+    ndcId:                      Optional[int]
+    createdTime:                Any
+    endTime:                    Any
+    commentsCount:              Optional[int]
+
+class Featured(BaseModel):
+    refObjectType:              Optional[int]
+    refObjectId:                Optional[str]
+    expiredTime:                Any
+    featuredType:               Optional[int]
+    createdTime:                Any
+    refObject:                  Optional[RefObject]
+
+
 
 
 Message.update_forward_refs()
