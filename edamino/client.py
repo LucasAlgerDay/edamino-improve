@@ -1471,8 +1471,7 @@ class Client:
             f'community/settings', data
         )
 
-    async def get_community_user_stats(self, userType, start=0, size=25):
-        target = "curator"
+    async def get_community_user_stats(self, userType: str = "curator", start: int =0, size: int=25):
         if      userType.lower() == "leader":   target = "leader"
         elif    userType.lower() == "curator":  target = "curator"
         else:   return None
@@ -1495,9 +1494,9 @@ class Client:
             objectType  = 1
             objectId    = blogId if blogId else quizId
 
-        elif wikiId:
+        elif itemId:
             objectType  = 2
-            objectId    = wikiId
+            objectId    = itemId
 
         elif threadId:
             objectType  = 12
@@ -1512,7 +1511,6 @@ class Client:
 
         response = await self.request('GET', f'admin/operation?objectId={objectId}&objectType={objectType}&pagingType={token}&size={size}')
         return tuple(map(lambda log: objects.AdminLogList(**log), response['adminLogList'])), response['pagingToken']
-
     
     async def get_leaderboard_info(self, rankingType=2):
         response = await self.request("GET", f"https://service.narvii.com/api/v1/g/s-{self.ndc_id}/community/leaderboard?rankingType={rankingType}&start=0&size=100", full_url=True)
@@ -1524,16 +1522,8 @@ class Client:
         elif wikiId:  response = await self.request('GET', f'item/{blogId}/vote?cv=1.2&start={start}&size={size}')
         return objects.PostLikes(response)
 
-    async def get_my_communities(self, start=0, size=25):
-            data = {"timestamp": int(time.time() * 1000)}
-            response = await self.request(
-                'GET', f'https://service.aminoapps.com/api/v1/g/s/community/joined?v=1&start={start}&size={size}', json=data, full_url=True)
-            return tuple(
-                map(lambda community: objects.Community(**community),
-                    response['communityList']))
-
     async def get_recent_blogs(self, pageToken=None, start=0, size=25):
-        data = {"timestamp": int(time.time() * 1000)}
+        data = {"timestamp": int(time() * 1000)}
         resp = await self.request("GET", f"feed/blog-all?pagingType=t{('&pageToken='+pageToken) if pageToken else ''}&start={start}&size={size}", json=data)
         return tuple(map(lambda recent: objects.Blog(**recent), resp["blogList"]))
 

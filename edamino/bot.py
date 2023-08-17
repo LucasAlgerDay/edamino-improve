@@ -148,7 +148,7 @@ class Bot:
         return register_function
 
     @staticmethod
-    def reload(miessage=None):
+    def reload(message=None):
         def register_function(callback):
             global ON_RELOAD
             ON_RELOAD = callback
@@ -297,19 +297,24 @@ class Bot:
 
 
     async def ws_reload(self):
-        self.ws     = await self.client.ws_connect()
-        timestamp   = int(time())
-
-        while True and (time() - timestamp) < 180:
+        connected = True
+        while connected:
             try:
-                data = await self.ws.receive_json(loads=loads)
-                await self.__call__handlers(data)
+                self.ws     = await self.client.ws_connect()
+                print("Ws Reload")
+                connected = False
+                timestamp   = int(time())
+                while True and (time() - timestamp) < 180:
+                    try:
+                        data = await self.ws.receive_json(loads=loads)
+                        await self.__call__handlers(data)
+                    except Exception as e:
+                        continue
             except Exception as e:
                 continue
 
     async def __call(self) -> None:
         self.loop.create_task(self.ws_reload())
-
         if ON_READY:
             await ON_READY()
 
@@ -330,19 +335,15 @@ class Bot:
                 if int(time()) - timestamp >= pollingTime:
                     self.loop.create_task(self.ws_reload())
                     timestamp = int(time())
-
                     if ON_READY:
                         await ON_READY()
-
                     if time() - self.timestamp > reloadTime:
                         login = await self.client.login(
                             self.email, self.password, self.deviceId)
                         self.sid = login.sid
                         self.uid = login.auid
                         self.update_cfg()
-
                 await sleep(1)
-
             except (TypeError, KeyError, AttributeError,
                     WebSocketConnectError):
                 continue
