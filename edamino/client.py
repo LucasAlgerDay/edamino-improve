@@ -100,7 +100,7 @@ class Client:
         headers = copy(self.headers)
 
         if not full_url:
-            url = f"https://service.aminoapps.com/api/v1/{self.ndc_id}/s/{url}"
+            url = f"https://service.narvii.com/api/v1/{self.ndc_id}/s/{url}"
         if json is not None:
             json['timestamp'] = get_timestamp()
             data = dumps(json)
@@ -148,7 +148,7 @@ class Client:
             start: int = 0,
             size: int = 25) -> Tuple[objects.Community, ...]:
         response = await self.request(
-            'GET', f'https://service.aminoapps.com/api/v1/g/s/community/joined?v=1&start={start}&size={size}', full_url= True)
+            'GET', f'https://service.narvii.com/api/v1/g/s/community/joined?v=1&start={start}&size={size}', full_url= True)
         return tuple(
             map(lambda community: objects.Community(**community),
                 response['communityList']))
@@ -197,13 +197,13 @@ class Client:
         data = {"message": message, "timestamp": int(time() * 1000)}
         return await self.request(
             'POST',
-            f'https://service.aminoapps.com/api/v1/x{comId}/s/community/membership-request', full_url= True, json= data
+            f'https://service.narvii.com/api/v1/x{comId}/s/community/membership-request', full_url= True, json= data
         )
     
     async def get_community_info(self, comId: str) -> Dict:
         req = await self.request(
             'GET',
-            f'https://service.aminoapps.com/api/v1/g/s-x{comId}/community/info?withInfluencerList=1&withTopicList=true&influencerListOrderStrategy=fansCount', full_url= True
+            f'https://service.narvii.com/api/v1/g/s-x{comId}/community/info?withInfluencerList=1&withTopicList=true&influencerListOrderStrategy=fansCount', full_url= True
         )
         return req["community"]
     
@@ -211,7 +211,7 @@ class Client:
         data = {'objectId': objectId, 'objectType': objectType, 'v': 1, 'timestamp': int(time() * 1000)}
         return await self.request(
             'POST',
-            f'https://service.aminoapps.com/api/v1/x{comId}/s/store/purchase', full_url= True, json= data
+            f'https://service.narvii.com/api/v1/x{comId}/s/store/purchase', full_url= True, json= data
         )
 
     async def block(self, userId: str) -> Dict:
@@ -266,14 +266,14 @@ class Client:
         }
         return await self.request(
             'POST',
-            f"https://service.aminoapps.com/api/v1/x{comId}/s/user-profile/{self.uid}/online-status", json=data, full_url= True
+            f"https://service.narvii.com/api/v1/x{comId}/s/user-profile/{self.uid}/online-status", json=data, full_url= True
         )
 
     async def promote_rank(self,comId: str,  userId: str, rank: str = "curator") -> Dict:
         data = {"timestamp": int(time() * 1000)}
         return await self.request(
             'POST',
-            f"https://service.aminoapps.com/api/v1/x{comId}/s/user-profile/{userId}/{rank}", full_url= True, json= data
+            f"https://service.narvii.com/api/v1/x{comId}/s/user-profile/{userId}/{rank}", full_url= True, json= data
         )
 
     async def warn(self, userId: str, reason: str = None) -> Dict:
@@ -353,11 +353,11 @@ class Client:
         data = {"timestamp" : int(time() * 1000)}   
         if invitation_code is not None:
             data["invitationId"] = invitation_code
-        return await self.request('POST', f'https://service.aminoapps.com/api/v1/x{comId}/s/community/join', full_url= True, json= data)
+        return await self.request('POST', f'https://service.narvii.com/api/v1/x{comId}/s/community/join', full_url= True, json= data)
 
     async def leave_community(self, comId: str):
         data = {"timestamp" : int(time() * 1000)}   
-        return await self.request('POST', f'https://service.aminoapps.com/api/v1/x{comId}/s/community/leave', full_url= True, json= data)
+        return await self.request('POST', f'https://service.narvii.com/api/v1/x{comId}/s/community/leave', full_url= True, json= data)
 
     async def upload_media(self, data: bytes, content_type: str) -> str:
         response = await self.request('POST',
@@ -514,9 +514,9 @@ class Client:
         }
 
         if self.ndc_id == "g":
-            url = "https://service.aminoapps.com/api/v1/g/s/link-resolution"
+            url = "https://service.narvii.com/api/v1/g/s/link-resolution"
         else:
-            url = f'https://service.aminoapps.com/api/v1/g/s-{self.ndc_id}/link-resolution'
+            url = f'https://service.narvii.com/api/v1/g/s-{self.ndc_id}/link-resolution'
 
         base = objects.BaseLinkInfo(
             **await self.request('POST', url, data, True))
@@ -555,7 +555,7 @@ class Client:
             "objectId": userId,
             "objectType": 0
         }
-        response = await self.request('POST', f"https://service.aminoapps.com/api/v1/x{comId}/s/flag", full_url= True, json= data)
+        response = await self.request('POST', f"https://service.narvii.com/api/v1/x{comId}/s/flag", full_url= True, json= data)
 
         return response
 
@@ -567,7 +567,7 @@ class Client:
             "objectId": messageId,
             "objectType": 7
         }
-        response = await self.request('POST', f"https://service.aminoapps.com/api/v1/x{comId}/s/flag", full_url= True, json= data)
+        response = await self.request('POST', f"https://service.narvii.com/api/v1/x{comId}/s/flag", full_url= True, json= data)
 
         return response
 
@@ -727,7 +727,9 @@ class Client:
                               uid: str,
                               message: Optional[str] = None,
                               sticker_id: Optional[str] = None,
-                              reply: Optional[str] = None) -> Dict:
+                              reply: Optional[str] = None,
+                              image_list: Optional[List] = None) -> Dict:
+        media_list = []
         data = {
             "content": message,
             "stickerId": sticker_id,
@@ -736,6 +738,11 @@ class Client:
         }
         if reply is not None:
             data["respondTo"] = reply
+        if image_list is not None:
+            for image in image_list:
+                media_list.append([100, image, None])
+        if image_list is not None:
+            data["mediaList"] = media_list
         return await self.request(
             'POST',
             f'user-profile/{uid}/{"comment" if self.ndc_id != "g" else "g-comment"}',
@@ -962,6 +969,10 @@ class Client:
         return await self.request(
             'POST', f'chat/thread/{chat_id}/co-host', json= data)
 
+    async def delete_cohosts(self, chat_id: str, user: str) -> Dict:
+        data= {"timestamp": int(time() * 1000)}
+        return await self.request(
+            'DELETE', f'chat/thread/{chat_id}/co-host/{user}', json= data)
 
     async def set_background_chat(self,
                                   chat_id: str,
@@ -1053,16 +1064,16 @@ class Client:
             "timestamp": int(time() * 1000)
         }
         return await self.request('POST',
-                                  f"https://service.aminoapps.com/api/v1/g/s-x{comId}/community/invitation", full_url= True, json= data)
+                                  f"https://service.narvii.com/api/v1/g/s-x{comId}/community/invitation", full_url= True, json= data)
 
 
     async def get_invite_codes(self, comId: str, status: str = "normal", start: int = 0, size: int = 25) -> Dict:
         return await self.request('GET',
-                                  f"https://service.aminoapps.com/api/v1/g/s-x{comId}/community/invitation?status={status}&start={start}&size={size}", full_url= True)
+                                  f"https://service.narvii.com/api/v1/g/s-x{comId}/community/invitation?status={status}&start={start}&size={size}", full_url= True)
 
     async def delete_invite_code(self,comId: str, invite_id: str) -> Dict:
         return await self.request('DELETE',
-                                  f"https://service.aminoapps.com/api/v1/g/s-x{comId}/community/invitation/{invite_id}", full_url= True)
+                                  f"https://service.narvii.com/api/v1/g/s-x{comId}/community/invitation/{invite_id}", full_url= True)
 
     async def delete_blog(self, blog_id: str) -> Dict:
         return await self.request('DELETE', f"blog/{blog_id}")
@@ -1335,40 +1346,40 @@ class Client:
 
     async def get_flag(self,comId: str,  size: int = 25):
         response = await self.request(
-            'GET', f'https://service.aminoapps.com/api/v1/x{comId}/s/flag?size={size}&status=pending&type=all&pagingType=t', full_url= True)
+            'GET', f'https://service.narvii.com/api/v1/x{comId}/s/flag?size={size}&status=pending&type=all&pagingType=t', full_url= True)
         return response
     
     async def get_notification(self,comId: str, start: int = 0, size: int = 25):
         response = await self.request(
-            'GET', f'https://service.aminoapps.com/api/v1/x{comId}/s/notification?pagingType=t&start={start}&size={size}', full_url= True)
+            'GET', f'https://service.narvii.com/api/v1/x{comId}/s/notification?pagingType=t&start={start}&size={size}', full_url= True)
         return response
     
     async def accept_join_request(self,comId: str, requestId: str):
         data = {"timestamp": int(time() * 1000)}
         response = await self.request(
-            'POST', f'https://service.aminoapps.com/api/v1/x{comId}/s/community/membership-request/{requestId}/accept', full_url= True, json=data)
+            'POST', f'https://service.narvii.com/api/v1/x{comId}/s/community/membership-request/{requestId}/accept', full_url= True, json=data)
         return response
 
     async def reject_join_request(self,comId: str, requestId: str):
         data = {"timestamp": int(time() * 1000)}
         response = await self.request(
-            'POST', f'https://service.aminoapps.com/api/v1/x{comId}/s/community/membership-request/{requestId}/reject', full_url= True, json=data)
+            'POST', f'https://service.narvii.com/api/v1/x{comId}/s/community/membership-request/{requestId}/reject', full_url= True, json=data)
         return response
 
     async def get_join_requests(self,comId: str, start: int = 0, size: int = 25):
         response = await self.request(
-            'GET', f'https://service.aminoapps.com/api/v1/x{comId}/s/community/membership-request?status=pending&start={start}&size={size}', full_url= True)
+            'GET', f'https://service.narvii.com/api/v1/x{comId}/s/community/membership-request?status=pending&start={start}&size={size}', full_url= True)
         return response['communityMembershipRequestList']
     
     async def add_influencer(self,comId: str, userId: str, monthlyFee: int):
         data = {"timestamp": int(time() * 1000), "monthlyFee": monthlyFee}
         response = await self.request(
-            'POST', f'https://service.aminoapps.com/api/v1/x{comId}/s/influencer/{userId}', full_url= True, json=data)
+            'POST', f'https://service.narvii.com/api/v1/x{comId}/s/influencer/{userId}', full_url= True, json=data)
         return response
     
     async def remove_influencer(self,comId: str, userId: str):
         response = await self.request(
-            'DELETE', f'https://service.aminoapps.com/api/v1/x{comId}/s/influencer/{userId}', full_url= True)
+            'DELETE', f'https://service.narvii.com/api/v1/x{comId}/s/influencer/{userId}', full_url= True)
         return response
     
     async def hide(self, reason: Optional[str], chat_id: str = None, blogId: str = None, wikiId: str = None, userId: str = None, fileId: str = None) -> Dict:
@@ -1465,7 +1476,6 @@ class Client:
                 "x": 0.0,
                 "y": 0.0
             }
-        print(data)
         return await self.request(
             'POST',
             f'community/settings', data
@@ -1530,3 +1540,49 @@ class Client:
     async def get_featured_blogs(self, start=0, size=25):
         resp = await self.request("GET", f"feed/featured?start={start}&size={size}")
         return tuple(map(lambda blog: objects.Featured(**blog), resp["featuredList"]))
+    
+    async def feature(self, times: int, userId: str = None, chatId: str = None, blogId: str = None, wikiId: str = None) -> Dict:
+        if chatId:
+            if times == 1: times = 3600
+            if times == 1: times = 7200
+            if times == 1: times = 10800
+
+        else:
+            if times == 1: times = 86400
+            elif times == 2: times = 172800
+            elif times == 3: times = 259200
+        data = {
+            "adminOpName": 114,
+            "adminOpValue": {
+                "featuredDuration": times
+            },
+            "timestamp": int(time() * 1000)
+        }
+
+        if userId:
+            data["adminOpValue"] = {"featuredType": 4}
+            data = json.dumps(data)
+            url = f"user-profile/{userId}/admin"
+
+        elif blogId:
+            data["adminOpValue"] = {"featuredType": 1}
+            url = f"blog/{blogId}/admin"
+
+        elif wikiId:
+            data["adminOpValue"] = {"featuredType": 1}
+            url = f"item/{wikiId}/admin"
+
+        elif chatId:
+            data["adminOpValue"] = {"featuredType": 5}
+            url = f"chat/thread/{chatId}/admin"
+
+        response = await self.request('POST', f'{url}')
+        return response
+    
+    async def get_wall_comments(self, comId: str, userId: str, sorting: str, start: int = 0, size: int = 25):
+        if sorting == "newest": sorting = "newest"
+        elif sorting == "oldest": sorting = "oldest"
+        elif sorting == "top": sorting = "vote"
+        data = {"timestamp": int(time() * 1000)}
+        response = await self.request('GET', f"https://service.narvii.com/api/v1/x{comId}/s/user-profile/{userId}/comment?sort={sorting}&start={start}&size={size}", json=data, full_url=True)
+        return response['commentList']

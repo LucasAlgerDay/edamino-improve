@@ -6,7 +6,12 @@ import datetime
 class UserProfileExtensions(BaseModel):
     privilegeOfCommentOnUserProfile: Optional[int]
     customTitles: Optional[Tuple]
+    style: Optional[style_background] = None
 
+
+class style_background(BaseModel):
+    backgroundMediaList: Any
+    backgroundColor: Any
 
 class AvatarFrame(BaseModel):
     status: Optional[int]
@@ -69,7 +74,7 @@ class UserProfile(BaseModel):
     aminoId: Optional[str]
     ndcId: Optional[int]
     createdTime: Optional[str]
-    userProfileExtensions: Optional[UserProfileExtensions]
+    extensions: Optional[UserProfileExtensions]
     storiesCount: Optional[int]
     blogsCount: Optional[int]
 
@@ -921,3 +926,4 @@ class Featured(BaseModel):
 Message.update_forward_refs()
 ChatExtensions.update_forward_refs()
 O.update_forward_refs()
+UserProfileExtensions.update_forward_refs()

@@ -209,16 +209,40 @@ class Context:
         }
         await self.ws.send_json(data)
 
+    async def join_video_chat_as_viewer(self, chat_id: Optional[str] = None, ndc_id: Optional[int] = None):
+        data = {
+            "o": {
+                "ndcId": int(self.msg.ndcId) if ndc_id is None else int(ndc_id),
+                "threadId": self.msg.threadId if chat_id is None else chat_id,
+                "joinRole": 2,
+                "id": "72446"
+            },
+            "t": 112
+        }
+        await self.ws.send_json(data)
+
     async def create_channel(self,
                              chat_id: Optional[str] = None,
                              ndc_id: Optional[int] = None):
         data = {
             "o": {
-                "id": "1300666754",
-                "ndcId": self.msg.ndcId if ndc_id is None else ndc_id,
-                "threadId": self.msg.threadId if chat_id is None else chat_id,
+                "ndcId": str(ndc_id) if ndc_id is not None else str(self.msg.ndcId),
+                "threadId": chat_id if chat_id is not None else self.msg.threadId,
+                "joinRole": 1,
+                "id": "2154531" 
             },
-            "t": 200
+            "t": 112
+        }
+        await self.ws.send_json(data)
+        data = {
+            "o": {
+                "ndcId": int(ndc_id) if ndc_id is not None else int(self.msg.ndcId),
+                "threadId": chat_id,
+                "joinRole": 1,
+                "channelType": 5,
+                "id": "2154531"  
+            },
+            "t": 108
         }
         await self.ws.send_json(data)
 
